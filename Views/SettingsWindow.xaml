@@ -1,0 +1,84 @@
+<Window x:Class="Recorder.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True"
+        SizeToContent="Height" Width="304" WindowStartupLocation="Manual" Foreground="{DynamicResource Text}"
+        FontFamily="{StaticResource Ui}" FontSize="12.5" Title="Rori" UseLayoutRounding="True">
+    <Border Margin="12" CornerRadius="16" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1">
+        <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.45" Color="Black"/></Border.Effect>
+        <Grid>
+        <StackPanel Margin="16,12,16,16">
+            <Grid Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Fill="{StaticResource Rec}" Margin="0,1,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Rori" FontSize="16" FontWeight="SemiBold" FontFamily="Segoe UI Variable Display, Segoe UI"/>
+                </StackPanel>
+                <Button x:Name="RecBtn" Style="{StaticResource Btn}" HorizontalAlignment="Right" Margin="0,0,86,0" Width="46" Height="28" Padding="0"
+                        FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE713;" ToolTip="Recording settings" Click="RecBtn_Click"/>
+                <Button x:Name="ThemeBtn" Style="{StaticResource Btn}" HorizontalAlignment="Right" Margin="0,0,34,0" Width="46" Height="28" Padding="0"
+                        FontFamily="Segoe MDL2 Assets" FontSize="14" Content="&#xE790;" ToolTip="Theme" Click="ThemeBtn_Click"/>
+                <Button Style="{StaticResource IconBtn}" Content="&#xE711;" HorizontalAlignment="Right" Click="Close_Click" Foreground="{DynamicResource Dim}" Margin="0,0,-6,0"/>
+                <Popup x:Name="ThemePopup" PlacementTarget="{Binding ElementName=ThemeBtn}" Placement="Bottom" HorizontalOffset="-118" VerticalOffset="2"
+                       AllowsTransparency="True" StaysOpen="False" PopupAnimation="Fade">
+                    <Border Margin="10" CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="5" Width="168">
+                        <Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.4" Color="Black"/></Border.Effect>
+                        <StackPanel x:Name="ThemeList"/>
+                    </Border>
+                </Popup>
+            </Grid>
+
+            <Grid Margin="0,0,0,6">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="Record region" VerticalAlignment="Center"/>
+                <Button x:Name="KeyRegion" Grid.Column="1" Style="{StaticResource Btn}" MinWidth="92" Padding="10,5" FontWeight="SemiBold" Click="Key_Click"
+                        ToolTip="Click to change"/>
+            </Grid>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="Save replay" VerticalAlignment="Center"/>
+                <Button x:Name="KeyBuffer" Grid.Column="1" Style="{StaticResource Btn}" MinWidth="92" Padding="10,5" FontWeight="SemiBold" Click="Key_Click"
+                        ToolTip="Click to change"/>
+            </Grid>
+
+            <Border Height="1" Background="{DynamicResource Border}" Margin="0,0,0,12"/>
+
+            <Grid Margin="0,0,0,6">
+                <TextBlock Text="Replay buffer" VerticalAlignment="Center"/>
+                <CheckBox x:Name="BufferOn" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="BufferOn_Click"/>
+            </Grid>
+            <Border CornerRadius="10" Background="{DynamicResource Surface2}" Padding="2" Margin="0,0,0,12">
+                <UniformGrid x:Name="MinutesRow" Rows="1"/>
+            </Border>
+
+            <Grid Margin="0,0,0,12">
+                <TextBlock Text="Launch at startup" VerticalAlignment="Center"/>
+                <CheckBox x:Name="AutoOn" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="AutoOn_Click"/>
+            </Grid>
+
+            <Button Style="{StaticResource Btn}" Content="Open recordings folder" Click="Folder_Click"/>
+            <TextBlock x:Name="Msg" Foreground="{StaticResource Rec}" TextWrapping="Wrap" Margin="0,10,0,0" Visibility="Collapsed"/>
+        </StackPanel>
+        <Border x:Name="RecBackdrop" Background="Transparent" CornerRadius="16" Visibility="Collapsed" MouseLeftButtonDown="RecBackdrop_Click"/>
+        <Border x:Name="RecCard" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,46,10,0" Width="250"
+                CornerRadius="12" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Padding="14,12,14,14">
+            <Border.Effect><DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.35" Color="Black"/></Border.Effect>
+            <StackPanel TextElement.Foreground="{DynamicResource Text}" TextElement.FontSize="12.5">
+                <TextBlock Text="Region recording" FontWeight="SemiBold" FontSize="13.5" Margin="0,0,0,12"/>
+                <Grid Margin="0,0,0,4">
+                    <TextBlock Text="Frame rate" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <TextBox x:Name="FpsBox" Style="{StaticResource Field}" Width="58" MaxLength="3"/>
+                        <TextBlock Text="fps" Foreground="{DynamicResource Dim}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+                <Slider x:Name="FpsSlider" Style="{StaticResource Slim}" Minimum="1" Maximum="720" SmallChange="1" LargeChange="30" Margin="0,0,0,12"/>
+                <TextBlock Text="Resolution" Margin="0,0,0,6"/>
+                <Border CornerRadius="10" Background="{DynamicResource Surface2}" Padding="2">
+                    <UniformGrid x:Name="ResRow" Rows="1"/>
+                </Border>
+                <TextBlock x:Name="RecNote" Foreground="{DynamicResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+        </Grid>
+    </Border>
+</Window>
