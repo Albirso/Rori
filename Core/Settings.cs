@@ -103,20 +103,36 @@ public sealed class Settings
 
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
-    public static bool Autostart
+    static string StartupLink => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), App.Name + ".lnk");
+
+    static bool HasRunValue
     {
         get
         {
             try { using var k = Registry.CurrentUser.OpenSubKey(RunKey); return k?.GetValue(App.Name) is string; }
             catch { return false; }
         }
+    }
+
+    public static bool Autostart
+    {
+        get
+        {
+            if (Package.IsPackaged)
+            {
+                try { return Package.StartupEnabled(); }
+                catch (Exception e) { Log.Write("startup task: " + e.Message); return false; }
+            }
+            return File.Exists(StartupLink) || HasRunValue;
+        }
         set
         {
             try
             {
-                using var k = Registry.CurrentUser.CreateSubKey(RunKey);
-                if (value) k.SetValue(App.Name, "\"" + Environment.ProcessPath + "\"");
-                else k.DeleteValue(App.Name, false);
+                if (Package.IsPackaged) { Package.SetStartup(value); return; }
+                using (var k = Registry.CurrentUser.CreateSubKey(RunKey)) k.DeleteValue(App.Name, false);
+                if (value && Environment.ProcessPath is { } exe) Shortcut.Create(StartupLink, exe);
+                else if (File.Exists(StartupLink)) File.Delete(StartupLink);
             }
             catch (Exception e) { Log.Write("autostart: " + e.Message); }
         }
@@ -124,7 +140,7 @@ public sealed class Settings
 
     public static void RefreshAutostartPath()
     {
-        if (Autostart) Autostart = true;
+        if (!Package.IsPackaged && Autostart) Autostart = true;
     }
 
     public static string KeyName(uint mods, uint vk)
