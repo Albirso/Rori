@@ -12,6 +12,7 @@ public partial class SettingsWindow : Window
     readonly App _app;
     Settings S => _app.Settings;
     Button? _capturing;
+    (uint vk, uint mods)? _pending;
     bool _closing;
     DateTime _popupClosed;
 
@@ -19,7 +20,7 @@ public partial class SettingsWindow : Window
     {
         _app = app;
         InitializeComponent();
-        Fill(MinutesRow, new[] { 1, 2, 3, 4, 5 }, S.BufferMinutes, v => { S.BufferMinutes = v; _app.SettingsChanged(false); });
+        BuildMinutes();
         BufferOn.IsChecked = S.BufferEnabled;
         ShowBufferState();
         AutoOn.IsChecked = Settings.Autostart;
@@ -32,23 +33,111 @@ public partial class SettingsWindow : Window
 
         Loaded += (_, _) =>
         {
-            var wa = SystemParameters.WorkArea;
-            Left = wa.Right - ActualWidth + 2;
-            Top = wa.Bottom - ActualHeight + 2;
+            Place();
             Activate();
         };
+        SizeChanged += (_, _) => { if (IsLoaded) Place(); };
         Deactivated += (_, _) => { if (!_closing && !ThemePopup.IsOpen) CloseMe(); };
         PreviewKeyDown += OnKey;
         Closed += (_, _) => { if (_capturing != null) _app.RegisterHotkeys(); };
     }
 
-    void Fill(UniformGrid row, int[] values, int current, Action<int> set)
+    void Place()
     {
-        foreach (var value in values)
+        var wa = SystemParameters.WorkArea;
+        Left = wa.Right - ActualWidth + 2;
+        Top = wa.Bottom - ActualHeight + 2;
+    }
+
+    bool _minSync;
+
+    void BuildMinutes()
+    {
+        ShowMinutes();
+        SetupNumberBox(MinBox, 2, CommitMinutes);
+        MinCell.MouseLeftButtonDown += (_, e) => { MinBox.Focus(); e.Handled = true; };
+    }
+
+    void SetupNumberBox(TextBox box, int maxDigits, Action commit)
+    {
+        box.PreviewTextInput += (_, e) => e.Handled = !FitsDigits(box, e.Text, maxDigits);
+        DataObject.AddPastingHandler(box, (_, e) =>
         {
-            var rb = new RadioButton { Style = (Style)FindResource("Seg"), Content = value + " min", IsChecked = value == current, GroupName = row.Name };
-            rb.Checked += (_, _) => set(value);
-            row.Children.Add(rb);
+            if (e.DataObject.GetData(typeof(string)) is not string t || !FitsDigits(box, t.Trim(), maxDigits)) e.CancelCommand();
+        });
+        box.LostKeyboardFocus += (_, _) => commit();
+        box.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            commit();
+            box.SelectAll();
+            e.Handled = true;
+        };
+        box.GotKeyboardFocus += (_, _) => box.SelectAll();
+        box.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            if (box.IsKeyboardFocusWithin) return;
+            box.Focus();
+            e.Handled = true;
+        };
+    }
+
+    static bool FitsDigits(TextBox box, string input, int maxDigits)
+    {
+        if (input.Length == 0 || !input.All(char.IsAsciiDigit)) return false;
+        var t = box.Text.Remove(box.SelectionStart, box.SelectionLength).Insert(box.SelectionStart, input);
+        return t.Length <= maxDigits;
+    }
+
+    void Min_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_minSync || MinBox == null) return;
+        SetMinutes(int.Parse((string)((FrameworkElement)sender).Tag));
+    }
+
+    void CommitMinutes()
+    {
+        if (int.TryParse(MinBox.Text, out var v)) SetMinutes(v);
+        else ShowMinutes();
+    }
+
+    void SetMinutes(int v)
+    {
+        v = Math.Clamp(v, 1, Settings.MaxBufferMinutes);
+        if (S.BufferMinutes != v)
+        {
+            S.BufferMinutes = v;
+            _app.SettingsChanged(false);
+        }
+        ShowMinutes();
+    }
+
+    void ShowMinutes()
+    {
+        int v = S.BufferMinutes;
+        bool custom = v is not (1 or 5);
+        _minSync = true;
+        Min1.IsChecked = v == 1;
+        Min5.IsChecked = v == 5;
+        _minSync = false;
+        MinBox.Text = custom ? v.ToString() : "";
+        if (custom)
+        {
+            MinCell.SetResourceReference(Border.BackgroundProperty, "Accent");
+            MinBox.SetResourceReference(ForegroundProperty, "OnAccent");
+            MinBox.SetResourceReference(TextBoxBase.CaretBrushProperty, "OnAccent");
+            MinBox.SetResourceReference(TextBoxBase.SelectionBrushProperty, "OnAccent");
+            MinUnit.SetResourceReference(TextBlock.ForegroundProperty, "OnAccent");
+            MinBox.BorderBrush = Brushes.Transparent;
+        }
+        else
+        {
+            MinCell.Background = Brushes.Transparent;
+            MinBox.SetResourceReference(ForegroundProperty, "Text");
+            MinBox.SetResourceReference(TextBoxBase.CaretBrushProperty, "Text");
+            MinBox.SetResourceReference(TextBoxBase.SelectionBrushProperty, "Accent");
+            MinUnit.SetResourceReference(TextBlock.ForegroundProperty, "Dim");
+            MinBox.SetResourceReference(BorderBrushProperty, "Dim");
         }
     }
 
@@ -174,19 +263,15 @@ public partial class SettingsWindow : Window
             if (_syncing) return;
             SetFps((int)Math.Round(e.NewValue));
         };
-        FpsBox.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsDigit);
-        DataObject.AddPastingHandler(FpsBox, (_, e) =>
+        SetupNumberBox(FpsBox, 3, CommitFps);
+        FpsBox.PreviewKeyDown += (_, e) =>
         {
-            if (e.DataObject.GetData(typeof(string)) is not string t || !t.All(char.IsDigit)) e.CancelCommand();
-        });
-        FpsBox.LostKeyboardFocus += (_, _) => CommitFps();
-        FpsBox.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Enter) { CommitFps(); FpsBox.SelectAll(); e.Handled = true; }
-            else if (e.Key == Key.Up) { SetFps(S.RegionFps + 1); e.Handled = true; }
-            else if (e.Key == Key.Down) { SetFps(S.RegionFps - 1); e.Handled = true; }
+            if (e.Key is not (Key.Up or Key.Down)) return;
+            int v = int.TryParse(FpsBox.Text, out var typed) ? typed : S.RegionFps;
+            SetFps(v + (e.Key == Key.Up ? 1 : -1));
+            FpsBox.SelectAll();
+            e.Handled = true;
         };
-        FpsBox.GotKeyboardFocus += (_, _) => FpsBox.SelectAll();
     }
 
     void CommitFps()
@@ -235,7 +320,12 @@ public partial class SettingsWindow : Window
 
     void Key_Click(object sender, RoutedEventArgs e)
     {
-        if (_capturing != null) { EndCapture(); return; }
+        if (_capturing != null)
+        {
+            if (sender == _capturing && _pending is { } p) SetKey(p.vk, p.mods);
+            else EndCapture();
+            return;
+        }
         _capturing = (Button)sender;
         _capturing.Content = "Press a key…";
         _app.SuspendHotkeys();
@@ -244,6 +334,7 @@ public partial class SettingsWindow : Window
     void EndCapture()
     {
         _capturing = null;
+        _pending = null;
         _app.RegisterHotkeys();
         ShowKeys();
         ShowMsg();
@@ -273,10 +364,27 @@ public partial class SettingsWindow : Window
         if (km.HasFlag(ModifierKeys.Control)) mods |= 2;
         if (km.HasFlag(ModifierKeys.Shift)) mods |= 4;
         if (km.HasFlag(ModifierKeys.Windows)) mods |= 8;
+        _pending = null;
+        ShowMsg();
         bool region = _capturing == KeyRegion;
         bool clash = region ? vk == S.BufferVk && mods == S.BufferMods : vk == S.RegionVk && mods == S.RegionMods;
-        if (clash) { EndCapture(); return; }
-        if (region) { S.RegionVk = vk; S.RegionMods = mods; }
+        if (clash) { _capturing.Content = region ? "Used for replay" : "Used for region"; return; }
+        bool standalone = vk is >= 0x70 and <= 0x87 or 0x13 or 0x91 or 0x2D;
+        if (!standalone && (mods & 0xB) == 0)
+        {
+            var name = Settings.KeyName(mods, vk);
+            _pending = (vk, mods);
+            _capturing.Content = "Use " + name;
+            Msg.Text = $"{name} is a common key. While Rori is running, it won't work in other apps. Click \"Use {name}\" to set it anyway, or press another key.";
+            Msg.Visibility = Visibility.Visible;
+            return;
+        }
+        SetKey(vk, mods);
+    }
+
+    void SetKey(uint vk, uint mods)
+    {
+        if (_capturing == KeyRegion) { S.RegionVk = vk; S.RegionMods = mods; }
         else { S.BufferVk = vk; S.BufferMods = mods; }
         S.Save();
         EndCapture();

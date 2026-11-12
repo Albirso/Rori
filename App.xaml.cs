@@ -40,6 +40,7 @@ public partial class App : Application
         _mutex = new Mutex(true, Name + ".SingleInstance", out bool first);
         if (!first)
         {
+            Native.AllowSetForegroundWindow(-1);
             try { EventWaitHandle.OpenExisting(Name + ".ShowSettings").Set(); } catch { }
             Shutdown();
             return;

@@ -2,7 +2,7 @@ param(
     [string]$IdentityName = "Rori.Local",
     [string]$Publisher = "CN=Rori",
     [string]$PublisherDisplayName = "Rori",
-    [string]$Version = "1.0.1.0",
+    [string]$Version = "1.0.2.0",
     [Parameter(Mandatory = $true)][string]$Ffmpeg,
     [Parameter(Mandatory = $true)][string]$ToolsDir,
     [string]$LicenseDir = ""

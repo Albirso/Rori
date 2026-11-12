@@ -47,7 +47,16 @@
                 <CheckBox x:Name="BufferOn" Style="{StaticResource Switch}" HorizontalAlignment="Right" Click="BufferOn_Click"/>
             </Grid>
             <Border CornerRadius="10" Background="{DynamicResource Surface2}" Padding="2" Margin="0,0,0,12">
-                <UniformGrid x:Name="MinutesRow" Rows="1"/>
+                <UniformGrid x:Name="MinutesRow" Rows="1">
+                    <RadioButton x:Name="Min1" Style="{StaticResource Seg}" Content="1 min" GroupName="min" Tag="1" Checked="Min_Checked"/>
+                    <RadioButton x:Name="Min5" Style="{StaticResource Seg}" Content="5 min" GroupName="min" Tag="5" Checked="Min_Checked"/>
+                    <Border x:Name="MinCell" CornerRadius="8" Margin="1" Background="Transparent" Cursor="IBeam" ToolTip="Any length from 1 to 60 minutes">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBox x:Name="MinBox" Style="{StaticResource SegField}" MinWidth="20"/>
+                            <TextBlock x:Name="MinUnit" Text="min" FontWeight="SemiBold" Margin="4,0,0,1" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
             </Border>
 
             <Grid Margin="0,0,0,12">
@@ -67,7 +76,7 @@
                 <Grid Margin="0,0,0,4">
                     <TextBlock Text="Frame rate" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <TextBox x:Name="FpsBox" Style="{StaticResource Field}" Width="58" MaxLength="3"/>
+                        <TextBox x:Name="FpsBox" Style="{StaticResource Field}" Width="58"/>
                         <TextBlock Text="fps" Foreground="{DynamicResource Dim}" VerticalAlignment="Center" Margin="6,0,0,0"/>
                     </StackPanel>
                 </Grid>

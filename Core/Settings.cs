@@ -35,6 +35,7 @@ public static class Log
 
 public sealed class Settings
 {
+    public const int MaxBufferMinutes = 60;
     public int BufferMinutes { get; set; } = 1;
     public bool BufferEnabled { get; set; } = true;
     public string Theme { get; set; } = "";
@@ -71,7 +72,7 @@ public sealed class Settings
                 s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new Settings();
         }
         catch (Exception e) { Log.Write("settings: " + e.Message); s = new Settings(); }
-        s.BufferMinutes = Math.Clamp(s.BufferMinutes, 1, 5);
+        s.BufferMinutes = Math.Clamp(s.BufferMinutes, 1, MaxBufferMinutes);
         s.RegionFps = Math.Clamp(s.RegionFps, 1, 720);
         if (s.Resolution is not ("1k" or "2k" or "4k")) s.Resolution = "2k";
         if (s.RegionVk == 0) s.RegionVk = 0x72;

@@ -144,23 +144,44 @@ public sealed class BufferRecorder
 
     void Tick()
     {
-        if (!_on) return;
+        if (!_on || _saving) return;
+        var fresh = Screens.MainTwo();
+        if (fresh.Count > 0)
+        {
+            if (!fresh.Select(m => (m.Index, m.Device)).SequenceEqual(_lanes.Select(l => (l.Mon.Index, l.Mon.Device))))
+            {
+                Log.Write("buffer: monitors changed to " + string.Join(", ", fresh.Select(m => m.Bounds)));
+                Start(_s);
+                return;
+            }
+            for (int i = 0; i < _lanes.Count; i++) _lanes[i].Mon = fresh[i];
+        }
         foreach (var l in _lanes)
         {
             if (l.Ff is { Running: true })
             {
-                if ((DateTime.Now - l.LastStart).TotalSeconds > 30) l.Fails = 0;
-                continue;
+                if ((DateTime.Now - l.LastStart).TotalSeconds < SegSec * 3) continue;
+                if (!Stalled(l)) { l.Fails = 0; continue; }
+                if (l.Fails < 3) Log.Write($"buffer, monitor {l.No} stalled, restarting");
+                l.Ff.Kill();
             }
-            if (l.Ff != null && l.Fails < 3) Log.Write($"buffer, monitor {l.No} stopped: " + l.Ff.Errors);
+            else if (l.Ff != null && l.Fails < 3) Log.Write($"buffer, monitor {l.No} stopped: " + l.Ff.Errors);
             int wait = Math.Min(60, 5 * (1 << Math.Min(l.Fails, 4)));
             if ((DateTime.Now - l.LastStart).TotalSeconds < wait) continue;
             l.Fails++;
-            var fresh = Screens.MainTwo();
-            if (fresh.Count >= l.No) l.Mon = fresh[l.No - 1];
             Launch(l);
         }
-        if (!_saving) Cleanup();
+        Cleanup();
+    }
+
+    static bool Stalled(Lane l)
+    {
+        try
+        {
+            var newest = Directory.GetFiles(TempDir, $"m{l.No}_*.ts").Select(SegTime).Max();
+            return newest == null || newest < DateTime.Now.AddSeconds(-SegSec * 3);
+        }
+        catch { return false; }
     }
 
     void Cleanup()

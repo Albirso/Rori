@@ -10,6 +10,7 @@ public static class Native
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool AllowSetForegroundWindow(int pid);
     [DllImport("user32.dll")] public static extern IntPtr SetFocus(IntPtr h);
     [DllImport("user32.dll")] public static extern bool SetWindowDisplayAffinity(IntPtr h, uint affinity);
     [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);

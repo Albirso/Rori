@@ -7,7 +7,7 @@ A small screen recorder for Windows that lives in the system tray.
 ## Features
 
 - **F3** — select a region and record it. Press F3 again to stop and save.
-- **F12** — save the last 1–5 minutes of both monitors (replay buffer, 60 fps).
+- **F12** — save the last 1–60 minutes of both monitors (replay buffer, 60 fps).
 - Frame rate from 1 to 720 fps and 1K / 2K / 4K resolution for region recording.
 - Computer sound is recorded in both modes.
 - Hardware encoding on NVIDIA, AMD and Intel GPUs.
